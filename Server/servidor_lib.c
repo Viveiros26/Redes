@@ -17,7 +17,7 @@ void enviar_erro(int socket, int codigo, const char *mensagem) {
              "%s",
              codigo, mensagem, strlen(mensagem), mensagem);
     if (write(socket, resposta, strlen(resposta)) < 0)
-        perror("Erro ao enviar dados");
+        printf("Erro ao enviar dados");
 }
 
 void enviar_arquivo(int socket, const char *caminho){
@@ -36,13 +36,13 @@ void enviar_arquivo(int socket, const char *caminho){
              "Content-Length: %ld\r\n"
              "\r\n",tamanho);
     if (write(socket, cabecalho, strlen(cabecalho)) < 0)
-        perror("Erro ao enviar dados");
+        printf("Erro ao enviar dados");
 
     char buffer[BUFFER_TAM];
     size_t lidos;
     while((lidos = fread(buffer, 1, sizeof(buffer), f))>0)
         if (write(socket, buffer, lidos) < 0)
-            perror("Erro ao enviar dados");
+            printf("Erro ao enviar dados");
     
     fclose(f);                  
 }  
@@ -81,6 +81,6 @@ void enviar_listagem(int socket, const char *diretorio){
     closedir(dir);
     strcat(resposta, "</ul></body></html>");
     if (write(socket, resposta, strlen(resposta)) < 0)
-        perror("Erro ao enviar dados");
+        printf("Erro ao enviar dados");
 
 }

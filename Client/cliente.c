@@ -11,7 +11,7 @@
 
 int main(int argc, char *argv[]){
     if(argc != 2){
-        fprintf(stderr, "Uso: %s http://<host>:<porta>/<arquivo>\n", argv[0]);
+        printf("Uso: %s http://<host>:<porta>/<arquivo>\n", argv[0]);
         return 1;
     }
     
@@ -35,8 +35,8 @@ int main(int argc, char *argv[]){
 
     int status = getaddrinfo(host, port_str, &hints, &res);
     if(status != 0){
-        fprintf(stderr, "Erro ao resolver host (%s): %s\n", host, gai_strerror(status));
-        exit(EXIT_FAILURE);
+        printf("Erro ao resolver host (%s): %s\n", host, gai_strerror(status));
+        return 1;
     }
 
     for(p = res; p != NULL; p = p->ai_next){
@@ -49,9 +49,9 @@ int main(int argc, char *argv[]){
     }
 
     if(p == NULL){
-        fprintf(stderr, "Não foi possível conectar ao servidor %s:%d\n", host, port);
+        printf("Não foi possível conectar ao servidor %s:%d\n", host, port);
         freeaddrinfo(res);
-        exit(EXIT_FAILURE);
+        return 1;
     }
 
     freeaddrinfo(res);

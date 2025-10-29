@@ -17,8 +17,8 @@ int main(){
     char buffer[BUFFER_TAM] = {0};
     
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0){
-        perror("Erro ao cria o socket");
-        exit(EXIT_FAILURE);
+        printf("Erro ao cria o socket");
+        return 1;
     }
 
     address.sin_family = AF_INET;
@@ -26,16 +26,16 @@ int main(){
     address.sin_port = htons(PORT);
 
     if(bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0){
-        perror("Erro ao associar ao socket");
+        printf("Erro ao associar ao socket");
         close(server_fd);
-        exit(EXIT_FAILURE);
+        return 1;
     }
 
 
     if(listen(server_fd, 3) < 0){
-        perror("Erro ao escutar");
+        printf("Erro ao escutar");
         close(server_fd);
-        exit(EXIT_FAILURE);
+        return 1;
     }
 
     printf("Servidor HTTP iniciando na porta %d e servindo o diretorio: %s\n", PORT, diretorio);
