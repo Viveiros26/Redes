@@ -93,13 +93,28 @@ int main(int argc, char *argv[]){
     int cabecalho = 0;
     char *pbuffer;
     char buffer[BUFFER_TAM];
+    char status_linha[128] = "";
+    int codigoHTTP = 0;
+    int status_lido = 0;
     while((bytes = read(sock, buffer, BUFFER_TAM-1)) > 0){
         buffer[bytes] = '\0';
         if(!cabecalho){
+            if(!status_lido){
+                sscanf(buffer, "%127[^\r\n]", status_linha);
+                sscanf(status_linha, "HTTP/%*s %d", &codigoHTTP);
+                status_lido = 1;
+            }
             pbuffer = strstr(buffer, "\r\n\r\n");
             if(pbuffer){
                 cabecalho = 1;
                 pbuffer += 4;
+                if(codigoHTTP != 200){
+                    printf("Erro na requisição HTTP: %d\n", codigoHTTP);
+                    fclose(f);
+                    close(sock);
+                    remove(caminhoCompleto);
+                    return 1;
+                }
                 fwrite(pbuffer, 1, bytes - (pbuffer-buffer), f);
             }
         } else
