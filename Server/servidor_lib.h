@@ -7,7 +7,7 @@
 #include <dirent.h>
 
 
-#define PORT 2926
+#define PORT 8080
 #define BUFFER_TAM 4096
 
 void enviar_erro(int socket, int codigo, const char *mensagem);

@@ -21,12 +21,14 @@ int main(){
         return 1;
     }
 
+    int opt = 1;
+    setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
     address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_addr.s_addr = htonl(INADDR_ANY);
     address.sin_port = htons(PORT);
 
     if(bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0){
-        printf("Erro ao associar ao socket");
+        printf("Erro ao associar ao socket\n");
         close(server_fd);
         return 1;
     }
