@@ -3,10 +3,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h> 
+#include <sys/stat.h>
+#include <netdb.h>
 
-#define PORT 8080
 #define BUFFER_TAM 4096
-#define SERVER_IP "127.0.0.1"
+
 
 int main(int argc, char *argv[]){
     if(argc != 2){
@@ -15,7 +16,7 @@ int main(int argc, char *argv[]){
     }
     
     char host[256], path[512] = "";
-    int port = 80;
+    int port = 8080;
     if (sscanf(argv[1], "http://%255[^:/]:%d/%511[^\n]", host, &port, path) < 2) 
         sscanf(argv[1], "http://%255[^/]/%511[^\n]", host, path);
 
@@ -24,27 +25,37 @@ int main(int argc, char *argv[]){
     
     printf("Conectando em %s:%d e requisitando /%s\n", host, port, path);
 
-
+    struct addrinfo hints, *res, *p;
     int sock = 0;
-    struct sockaddr_in serv_addr;
-    char buffer[BUFFER_TAM] = {0};
+    char port_str[10];
+    snprintf(port_str, sizeof(port_str), "%d", port);
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
 
-    if((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0){
-        perror("Erro ao criar o socket");
+    int status = getaddrinfo(host, port_str, &hints, &res);
+    if(status != 0){
+        fprintf(stderr, "Erro ao resolver host (%s): %s\n", host, gai_strerror(status));
         exit(EXIT_FAILURE);
     }
 
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(PORT);
+    for(p = res; p != NULL; p = p->ai_next){
+        sock = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+        if(sock == -1)
+            continue;
+        if(connect(sock, p->ai_addr, p->ai_addrlen) == 0)
+            break;
+        close(sock);
+    }
 
-    if(inet_pton(AF_INET, host, &serv_addr.sin_addr) <= 0){
-        perror("Endereço inválido");
+    if(p == NULL){
+        fprintf(stderr, "Não foi possível conectar ao servidor %s:%d\n", host, port);
+        freeaddrinfo(res);
         exit(EXIT_FAILURE);
     }
-    if(connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0){
-        perror("Erro ao se conectar");
-        exit(EXIT_FAILURE);
-    }
+
+    freeaddrinfo(res);
+
 
     char request[1024];
     snprintf(request, sizeof(request), 
@@ -65,7 +76,13 @@ int main(int argc, char *argv[]){
     if(strlen(nomeArquivo)==0)
         nomeArquivo = "index.html";
 
-    FILE *f = fopen(nomeArquivo, "wb");
+    struct stat st;
+    if(stat("downloads", &st) == -1)
+        mkdir("downloads", 0755);
+
+    char caminhoCompleto[1024];
+    snprintf(caminhoCompleto, sizeof(caminhoCompleto), "downloads/%s", nomeArquivo);
+    FILE *f = fopen(caminhoCompleto, "wb");
     if(!f){
         perror("Erro ao criar o arquivo");
         close(sock);
@@ -74,21 +91,22 @@ int main(int argc, char *argv[]){
     
     int bytes;
     int cabecalho = 0;
-    char *p;
+    char *pbuffer;
+    char buffer[BUFFER_TAM];
     while((bytes = read(sock, buffer, BUFFER_TAM-1)) > 0){
         buffer[bytes] = '\0';
         if(!cabecalho){
-            p = strstr(buffer, "\r\n\r\n");
-            if(p){
+            pbuffer = strstr(buffer, "\r\n\r\n");
+            if(pbuffer){
                 cabecalho = 1;
-                p += 4;
-                fwrite(p, 1, bytes - (p-buffer), f);
+                pbuffer += 4;
+                fwrite(pbuffer, 1, bytes - (pbuffer-buffer), f);
             }
         } else
             fwrite(buffer, 1, bytes, f);
     }
     fclose(f);
-    printf("Arquivo salvo como: %s\n", nomeArquivo);
     close(sock);
+    printf("Arquivo salvo como: %s\n", nomeArquivo);
     return 0;
 }

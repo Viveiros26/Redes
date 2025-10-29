@@ -1,0 +1,6 @@
+Server/servidor_lib.o
+Server/servidor_main.o
+Client/cliente.o
+Server/servidor
+Client/cliente
+Client/downloads
